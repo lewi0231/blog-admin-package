@@ -1,290 +1,376 @@
-# Modular Blog Admin System
+# Blog Admin Package
 
-This is a modular, reusable admin system for blog management that can be easily integrated into different projects.
+A modular blog admin system for Next.js applications. This package provides a complete admin interface for managing blog posts with authentication, post creation/editing, and content rendering.
 
 ## Features
 
-- 🔐 **Authentication**: Secure access key-based authentication with session persistence
-- 📝 **Post Management**: Create, edit, delete, and publish/unpublish posts
-- 🖼️ **Image Upload**: Cloudinary integration for cover images
-- 👀 **Live Preview**: Real-time preview of posts while editing
-- 🏷️ **Content Warnings**: Optional content warning system
-- 📱 **Responsive Design**: Works on desktop and mobile
-- ⚙️ **Configurable**: Easy to customize for different needs
-
-## Architecture
-
-### Core Components
-
-```
-components/admin/
-├── auth-form.tsx          # Authentication form
-├── admin-header.tsx       # Header with title and actions
-├── post-creation-form.tsx # Post creation/editing form
-└── post-list.tsx         # List of all posts with actions
-
-hooks/
-├── use-admin-auth.ts     # Authentication logic
-└── use-posts.ts         # Post CRUD operations
-
-lib/
-├── types.ts             # Shared TypeScript interfaces
-└── admin-config.ts      # Configuration system
-```
-
-### Key Benefits
-
-1. **Separation of Concerns**: Each component has a single responsibility
-2. **Reusability**: Components can be used independently
-3. **Configurability**: Easy to customize via configuration objects
-4. **Type Safety**: Full TypeScript support with shared interfaces
-5. **Error Handling**: Comprehensive error handling throughout
-
-## Repo File Structure
-
-blog-admin-package/
-├── package.json
-├── README.md
-├── src/
-│ ├── components/
-│ │ └── admin/
-│ │ ├── auth-form.tsx
-│ │ ├── admin-header.tsx
-│ │ ├── post-creation-form.tsx
-│ │ └── post-list.tsx
-│ ├── hooks/
-│ │ ├── use-admin-auth.ts
-│ │ └── use-posts.ts
-│ ├── lib/
-│ │ ├── types.ts
-│ │ └── admin-config.ts
-│ └── api/
-│ ├── admin/
-│ │ └── check-access/
-│ │ └── route.ts
-│ └── posts/
-│ ├── route.ts
-│ └── [id]/
-│ └── route.ts
-├── templates/
-│ └── prisma-schema.prisma
-└── dist/ (built files)
+- 🔐 **Authentication**: Secure admin access with configurable access keys
+- ✍️ **Post Management**: Create, edit, delete, and publish blog posts
+- 🎨 **Content Rendering**: Markdown support with syntax highlighting and Mermaid diagrams
+- 📸 **Image Upload**: Cloudinary integration for image management
+- 🎯 **Customizable**: Configurable endpoints, themes, and features
+- 📱 **Responsive**: Mobile-friendly admin interface
+- 🔧 **TypeScript**: Full TypeScript support with type definitions
 
 ## Installation
 
-### 1. Copy Required Files
+### Prerequisites
 
-Copy these directories and files to your project:
-
-```
-components/admin/
-hooks/
-lib/types.ts
-lib/admin-config.ts
-app/api/admin/check-access/route.ts
-app/api/posts/route.ts
-app/api/posts/[id]/route.ts
-```
-
-### 2. Install Dependencies
+Your Next.js project must have these peer dependencies installed:
 
 ```bash
-npm install lucide-react next-cloudinary
+npm install next react react-dom
+npm install @radix-ui/react-slot @radix-ui/react-dropdown-menu @radix-ui/react-separator @radix-ui/react-dialog
+npm install lucide-react clsx tailwind-merge class-variance-authority
+npm install next-cloudinary
 ```
 
-### 3. Set Up Environment Variables
+### Install the Package
 
-```env
-ADMIN_ENABLED=true
-ADMIN_ACCESS_KEY=your-secure-access-key
-DATABASE_URL=your-database-url
+```bash
+npm install @your-org/blog-admin
 ```
 
-### 4. Configure Your Admin
+## Quick Start
 
-```typescript
-// app/admin/page.tsx
-import { useAdminAuth } from "@/hooks/use-admin-auth";
-import { createAdminConfig } from "@/lib/admin-config";
+### 1. Create an Admin Page
 
-const customConfig = createAdminConfig({
-  title: "My Blog Admin",
-  features: {
-    imageUpload: true,
-    preview: true,
-    contentWarnings: false,
-  },
-  cloudinary: {
-    uploadPreset: "my-blog-upload",
-  },
-});
+Create a new page in your Next.js app (e.g., `app/admin/page.tsx`):
 
-export default function AdminPage() {
-  const { isAuthorized, config, login, logout } = useAdminAuth(customConfig);
-  // ... rest of your admin page
+```tsx
+import { AdminPage } from "@your-org/blog-admin";
+
+export default function Admin() {
+  return <AdminPage />;
 }
 ```
 
-## Configuration Options
+### 2. Set Up Environment Variables
+
+Add these to your `.env.local`:
+
+```env
+ADMIN_ENABLED=true
+ADMIN_ACCESS_KEY=your-secure-access-key-here
+```
+
+### 3. Create API Routes
+
+The package expects these API endpoints. Create them in your Next.js app:
+
+#### Authentication Route (`app/api/admin/check-access/route.ts`)
+
+```tsx
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET() {
+  const adminEnabled = process.env.ADMIN_ENABLED === "true";
+
+  if (!adminEnabled) {
+    return NextResponse.json({ enabled: false }, { status: 403 });
+  }
+
+  return NextResponse.json({ enabled: true });
+}
+
+export async function POST(request: NextRequest) {
+  const { accessKey } = await request.json();
+  const adminKey = process.env.ADMIN_ACCESS_KEY;
+
+  if (accessKey === adminKey) {
+    return NextResponse.json({ success: true });
+  }
+
+  return NextResponse.json({ success: false }, { status: 401 });
+}
+```
+
+#### Posts API Route (`app/api/posts/route.ts`)
+
+```tsx
+import { NextRequest, NextResponse } from "next/server";
+
+// Your posts database logic here
+export async function GET() {
+  // Return array of blog posts
+  return NextResponse.json([]);
+}
+
+export async function POST(request: NextRequest) {
+  const postData = await request.json();
+  // Create new post logic here
+  return NextResponse.json({ id: "new-post-id", ...postData });
+}
+```
+
+## Configuration
 
 ### Basic Configuration
 
-```typescript
-const config = createAdminConfig({
+```tsx
+import { AdminPage } from '@your-org/blog-admin'
+
+export default function Admin() {
+  return (
+    <AdminPage
+      config={{
+        title: "My Blog Admin",
+        postsEndpoint: "/api/my-posts",
+        authEndpoint: "/api/admin/check-access",
+        cloudinary: {
+          uploadPreset: "my-blog-preset"
+        }
+      }}
+    />
+  />
+}
+```
+
+### Advanced Configuration
+
+```tsx
+import { AdminPage } from "@your-org/blog-admin";
+
+const config = {
+  // Authentication
+  authEnabled: true,
+  authExpiryHours: 24,
+
+  // API endpoints
+  apiBaseUrl: "/api",
+  postsEndpoint: "/api/posts",
+  authEndpoint: "/api/admin/check-access",
+
+  // UI customization
   title: "My Blog Admin",
-  authExpiryHours: 12,
+  logo: "/admin-logo.png",
+  theme: "dark" as const,
+
+  // Features
   features: {
     imageUpload: true,
     preview: true,
     contentWarnings: true,
     tags: true,
+    customFields: false,
+    authors: false,
   },
-});
+
+  // Cloudinary settings
+  cloudinary: {
+    uploadPreset: "my-blog-preset",
+    maxFileSize: 10000000, // 10MB
+    allowedFormats: ["jpg", "jpeg", "png", "gif", "webp"],
+  },
+};
+
+export default function Admin() {
+  return <AdminPage config={config} />;
+}
 ```
 
-### Minimal Configuration
+## API Reference
 
-```typescript
-import { ADMIN_CONFIGS } from "@/lib/admin-config";
+### Components
 
-const config = ADMIN_CONFIGS.minimal;
-```
+#### `AdminPage`
 
-### Full-Featured Configuration
+Main admin page component.
 
-```typescript
-import { ADMIN_CONFIGS } from "@/lib/admin-config";
+**Props:**
 
-const config = ADMIN_CONFIGS.full;
-```
+- `config?: Partial<AdminConfig>` - Configuration object
 
-## Customization
+#### `AdminHeader`
 
-### Adding New Features
+Header component with title and action buttons.
 
-1. **Extend the types** in `lib/types.ts`:
+**Props:**
 
-```typescript
-export interface AdminConfig {
-  // ... existing config
-  features?: {
-    // ... existing features
-    myNewFeature?: boolean;
+- `title?: string` - Admin title
+- `onLogout: () => void` - Logout handler
+- `onCreateNew?: () => void` - Create new post handler
+- `showCreateButton?: boolean` - Show create button
+- `loading?: boolean` - Loading state
+
+#### `AuthForm`
+
+Authentication form component.
+
+**Props:**
+
+- `onLogin: (accessKey: string) => Promise<boolean>` - Login handler
+- `title?: string` - Form title
+- `loading?: boolean` - Loading state
+
+#### `PostCreationForm`
+
+Form for creating and editing posts.
+
+**Props:**
+
+- `post?: BlogPost | null` - Post to edit (null for new post)
+- `onSubmit: (data: PostFormData) => Promise<void>` - Submit handler
+- `onCancel: () => void` - Cancel handler
+- `loading?: boolean` - Loading state
+- `showPreview?: boolean` - Show preview button
+
+#### `PostList`
+
+List of blog posts with actions.
+
+**Props:**
+
+- `posts: BlogPost[]` - Array of posts
+- `onEdit: (post: BlogPost) => void` - Edit handler
+- `onTogglePublish: (postId: string, currentStatus: boolean) => Promise<void>` - Toggle publish handler
+- `onDelete: (postId: string, postTitle: string) => Promise<void>` - Delete handler
+- `loading?: boolean` - Loading state
+
+### Hooks
+
+#### `useAdminAuth(config?: Partial<AdminConfig>)`
+
+Hook for admin authentication state.
+
+**Returns:**
+
+- `isAuthorized: boolean` - Whether user is authenticated
+- `isLoading: boolean` - Loading state
+- `config: AdminConfig` - Merged configuration
+- `login: (accessKey: string) => Promise<boolean>` - Login function
+- `logout: () => void` - Logout function
+
+#### `usePosts(apiEndpoint?: string)`
+
+Hook for managing blog posts.
+
+**Returns:**
+
+- `posts: BlogPost[]` - Array of posts
+- `loading: boolean` - Loading state
+- `error: string | null` - Error message
+- `fetchPosts: () => Promise<void>` - Fetch posts function
+- `createPost: (data: PostFormData) => Promise<BlogPost | null>` - Create post function
+- `updatePost: (postId: string, data: Partial<PostFormData>) => Promise<BlogPost | null>` - Update post function
+- `togglePublishStatus: (postId: string, currentStatus: boolean) => Promise<boolean>` - Toggle publish function
+- `deletePost: (postId: string) => Promise<boolean>` - Delete post function
+
+### Types
+
+#### `BlogPost`
+
+```tsx
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt?: string;
+  published: boolean;
+  publishedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  layout: string;
+  featured: boolean;
+  coverImage?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  contentWarning?: string;
+  tags: string[];
+  customFields?: Record<string, unknown>;
+  authorId?: string;
+  author?: {
+    id: string;
+    name?: string;
+    email: string;
+    avatar?: string;
+    bio?: string;
   };
 }
 ```
 
-2. **Update the configuration** in `lib/admin-config.ts`:
+#### `AdminConfig`
 
-```typescript
-export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
-  // ... existing config
-  features: {
-    // ... existing features
-    myNewFeature: false,
-  },
-};
-```
-
-3. **Create your component** and use the config:
-
-```typescript
-export function MyNewFeature({ config }: { config: AdminConfig }) {
-  if (!config.features?.myNewFeature) return null;
-
-  return <div>My new feature</div>;
+```tsx
+interface AdminConfig {
+  authEnabled: boolean;
+  authKey?: string;
+  authExpiryHours?: number;
+  apiBaseUrl?: string;
+  postsEndpoint?: string;
+  authEndpoint?: string;
+  title?: string;
+  logo?: string;
+  theme?: "light" | "dark" | "auto";
+  features?: {
+    imageUpload?: boolean;
+    preview?: boolean;
+    contentWarnings?: boolean;
+    tags?: boolean;
+    customFields?: boolean;
+    authors?: boolean;
+  };
+  cloudinary: {
+    uploadPreset: string;
+    maxFileSize?: number;
+    allowedFormats?: string[];
+  };
 }
 ```
 
-### Styling
+## Styling
 
-The admin system uses Tailwind CSS classes. You can customize the appearance by:
+The package uses Tailwind CSS classes. Make sure your project has Tailwind configured and includes the necessary CSS:
 
-1. **Modifying the base classes** in the components
-2. **Using CSS modules** for component-specific styles
-3. **Extending Tailwind config** for custom design tokens
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
 
-### Database Schema
+## Customization
 
-The admin system expects a Prisma schema with at least:
+### Custom Content Renderer
 
-```prisma
-model Post {
-  id              String    @id @default(cuid())
-  title           String
-  slug            String    @unique
-  content         String
-  excerpt         String?
-  published       Boolean   @default(false)
-  publishedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  coverImage      String?
-  contentWarning  String?
-  // ... other fields as needed
+You can provide a custom content renderer by passing it to the `PostCreationForm`:
+
+```tsx
+import { PostCreationForm } from "@your-org/blog-admin";
+
+function CustomRenderer({ content }: { content: string }) {
+  return <div dangerouslySetInnerHTML={{ __html: content }} />;
 }
+
+<PostCreationForm
+  onSubmit={handleSubmit}
+  onCancel={handleCancel}
+  renderContent={CustomRenderer}
+/>;
 ```
 
-## API Endpoints
+### Custom Themes
 
-The admin system expects these API endpoints:
+The package supports light, dark, and auto themes. You can customize the appearance by overriding Tailwind classes in your global CSS.
 
-### Authentication
+## Development
 
-- `GET /api/admin/check-access` - Check if admin is enabled
-- `POST /api/admin/check-access` - Validate access key
+### Building the Package
 
-### Posts
-
-- `GET /api/posts` - Fetch all posts
-- `POST /api/posts` - Create new post
-- `PATCH /api/posts/[id]` - Update post
-- `DELETE /api/posts/[id]` - Delete post
-
-## Security Considerations
-
-1. **Access Key**: Use a strong, randomly generated access key
-2. **Rate Limiting**: The auth endpoint includes basic rate limiting
-3. **Session Management**: Sessions expire after configurable hours
-4. **Input Validation**: All inputs are validated on both client and server
-5. **SQL Injection**: Use Prisma ORM for safe database operations
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Authentication not working**
-
-   - Check `ADMIN_ENABLED` and `ADMIN_ACCESS_KEY` environment variables
-   - Verify the auth endpoint is accessible
-
-2. **Image upload not working**
-
-   - Ensure Cloudinary is configured with correct upload preset
-   - Check CORS settings if needed
-
-3. **Posts not loading**
-   - Verify database connection and Prisma schema
-   - Check API endpoint responses
-
-### Debug Mode
-
-Enable debug logging by setting:
-
-```env
-NODE_ENV=development
+```bash
+npm run build
 ```
 
-## Contributing
+### Publishing
 
-When contributing to this admin system:
-
-1. **Maintain modularity**: Keep components focused and reusable
-2. **Add types**: Always define TypeScript interfaces for new features
-3. **Update config**: Extend the configuration system for new options
-4. **Test thoroughly**: Ensure changes work across different configurations
-5. **Document changes**: Update this README for new features
+```bash
+npm publish
+```
 
 ## License
 
-This admin system is designed to be reusable and customizable. Feel free to adapt it for your projects while maintaining the modular architecture.
+MIT
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
